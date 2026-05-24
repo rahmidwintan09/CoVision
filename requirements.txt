@@ -7,7 +7,7 @@ bcrypt
 numpy
 av
 streamlit-webrtc
-opencv-python-headless
+opencv-python-headless==4.9.0.80
 onnxruntime
 ultralytics>=8.1.0
 torch>=2.1.0
