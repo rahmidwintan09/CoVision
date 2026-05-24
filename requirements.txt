@@ -1,0 +1,13 @@
+streamlit
+Pillow
+fpdf
+gdown
+psycopg2-binary
+bcrypt
+numpy
+av
+streamlit-webrtc
+opencv-python-headless
+onnxruntime
+ultralytics>=8.1.0
+torch>=2.1.0
