@@ -105,7 +105,7 @@ def about_page():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.image("C:\Rahmi\kuliah\SEMESTER 8\BISMILLAH LANCAR SKRIPSI!!\CoVision\images\matang.jpg", caption="Matang", use_container_width=True)
+        st.image("https://raw.githubusercontent.com/rahmidwintan/CoVision/main/images/matang.jpg", caption="Matang", use_container_width=True)
         st.markdown("""
         **Matang (Grade A)**  
         - Warna merah merata  
@@ -113,7 +113,7 @@ def about_page():
         """)
 
     with col2:
-        st.image("C:\Rahmi\kuliah\SEMESTER 8\BISMILLAH LANCAR SKRIPSI!!\CoVision\images\setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
+        st.image("https://raw.githubusercontent.com/rahmidwintan/CoVision/main/images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
         st.markdown("""
         **Setengah Matang (Grade B)**  
         - Warna kuning  
@@ -122,7 +122,7 @@ def about_page():
         """)
 
     with col3:
-        st.image("C:\Rahmi\kuliah\SEMESTER 8\BISMILLAH LANCAR SKRIPSI!!\CoVision\images\mentah.jpg", caption="Mentah", use_container_width=True)
+        st.image("https://raw.githubusercontent.com/rahmidwintan/CoVision/main/images/mentah.jpg", caption="Mentah", use_container_width=True)
         st.markdown("""
         **Mentah (Grade C)**  
         - Warna hijau 
@@ -133,7 +133,7 @@ def about_page():
     st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
 
 def upload_image_detect_page():
-    uploaded_files = st.file_uploader("Upload Gambar Tomat", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
+    uploaded_files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
     st.session_state.uploaded_files = uploaded_files or []
 
 def detect_page():
