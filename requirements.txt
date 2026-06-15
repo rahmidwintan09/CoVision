@@ -1,17 +1,15 @@
-streamlit==1.33.0
-Pillow==10.2.0
+streamlit
+Pillow
 fpdf
 gdown
 psycopg2-binary
 bcrypt
-av==10.0.0
-streamlit-webrtc==0.47.1
 
 numpy==1.26.4
 opencv-python-headless==4.8.1.78
 
-torch==2.0.1
-torchvision==0.15.2
+torch==2.1.2
+torchvision==0.16.2
 
-ultralytics==8.0.196
-onnxruntime==1.17.0
+ultralytics==8.0.230
+onnxruntime
