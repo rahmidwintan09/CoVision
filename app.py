@@ -4,7 +4,7 @@ from PIL import Image, UnidentifiedImageError, ImageOps
 import numpy as np
 from ultralytics import YOLO
 from fpdf import FPDF
-import tempfile, gdown, os, json, io, datetime
+import tempfile, os, json, io, datetime, urllib.request
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 import av
 
@@ -58,39 +58,40 @@ def force_rerun():
 @st.cache_resource
 def load_model():
     MODEL_PATH = "best_kopi.pt"
-    MODEL_URL = "https://github.com/rahmidwintan09/CoVision/blob/65305749baa8fbd4c71eefea377709d9a7f31668/best_kopi.pt"
     
+    GITHUB_RELEASE_URL = "https://github.com/rahmidwintan09/CoVision/blob/b2a48f7b95c9ee11eb37dd277671fe2f58222651/best_kopi.pt"
     if os.path.exists(MODEL_PATH):
-        is_html = False
         try:
             with open(MODEL_PATH, "r", encoding="utf-8", errors="ignore") as f:
-                start_content = f.read(100)
-                if "<html" in start_content.lower() or "<!doctype" in start_content.lower():
-                    is_html = True
+                start_content = f.read(200)
+                if "<html" in start_content.lower() or "<!doctype" in start_content.lower() or "not found" in start_content.lower():
+                    os.remove(MODEL_PATH)
+        except:
+            pass
+    if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 2000000:
+        try:
+            os.remove(MODEL_PATH)
         except:
             pass
 
-        if is_html or os.path.getsize(MODEL_PATH) < 2000000:
-            try:
-                os.remove(MODEL_PATH)
-            except:
-                pass
-
     if not os.path.exists(MODEL_PATH):
-        url = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
-        try:
-            gdown.download(url, MODEL_PATH, quiet=False)
-        except Exception as e:
-            st.error(f"Gagal mengunduh model dari Google Drive: {e}")
-            st.warning("Tips: Google Drive mungkin membatasi unduhan otomatis karena batasan kuota IP server.")
-            st.stop()
-
+        with st.spinner("Mengunduh model AI dari GitHub Releases... Mohon tunggu sebentar."):
+            try:
+                opener = urllib.request.build_opener()
+                opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+                urllib.request.install_opener(opener)
+                urllib.request.urlretrieve(GITHUB_RELEASE_URL, MODEL_PATH)
+            except Exception as e:
+                st.error(f"Gagal mengunduh model dari server GitHub: {e}")
+                st.info("Periksa kembali apakah GITHUB_RELEASE_URL Anda valid dan repositorinya bersifat Publik.")
+                st.stop()
+            
     if os.path.exists(MODEL_PATH):
         try:
             with open(MODEL_PATH, "r", encoding="utf-8", errors="ignore") as f:
                 start_content = f.read(100)
                 if "<html" in start_content.lower() or "<!doctype" in start_content.lower():
-                    st.error("Google Drive mengembalikan halaman limit kuota (HTML), bukan file model asli. Silakan hapus instans atau klik 'Reboot App' pada dashboard Streamlit beberapa saat lagi.")
+                    st.error("Gagal memuat: URL mengembalikan dokumen web (HTML) bukan berkas model .pt.")
                     try: os.remove(MODEL_PATH)
                     except: pass
                     st.stop()
@@ -98,12 +99,20 @@ def load_model():
             pass
 
     if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) == 0:
-        st.error("File model kosong atau tidak ditemukan. Coba refresh halaman.")
+        st.error("Berkas model kosong atau tidak ditemukan. Silakan refresh halaman.")
         st.stop()
 
-    model = YOLO(MODEL_PATH)
-    label_names = model.names
-    return model, label_names
+    # Load ke framework Ultralytics YOLO
+    try:
+        model = YOLO(MODEL_PATH)
+        label_names = model.names
+        return model, label_names
+    except Exception as e:
+        st.error(f"Gagal menginisialisasi struktur YOLO: {e}")
+        st.warning("Menghapus berkas yang rusak agar sistem mengunduh ulang pada percobaan berikutnya.")
+        try: os.remove(MODEL_PATH)
+        except: pass
+        st.stop()
 
 
 # Konfigurasi halaman diletakkan di awal eksekusi utama streamlit
@@ -130,8 +139,7 @@ for k, v in defaults.items():
 
 # Load model dan simpan ke state JIKA belum ada atau masih None
 if "model" not in st.session_state or st.session_state.model is None:
-    with st.spinner("Memuat Model AI CoVision... Mohon tunggu"):
-        st.session_state.model, st.session_state.label_names = load_model()
+    st.session_state.model, st.session_state.label_names = load_model()
 
 # ================= HALAMAN LOGIN & DAFTAR =================
 def signup():
@@ -164,4 +172,114 @@ def login():
     st.button("Belum punya akun? Daftar", key="signup_button", on_click=lambda: st.session_state.update(page="signup"))
 
 
-# ================= HALAMAN UTAMA & KONTEN =
+# ================= HALAMAN UTAMA & KONTEN =================
+def about_page():
+    st.title("Tingkat Kematangan Buah Kopi")
+    st.write("""
+    Kematangan buah kopi merupakan indikator penting dalam penentuan kualitas, rasa, serta waktu panen dan distribusi. Berikut adalah tiga kategori utama tingkat kematangan buah kopi yang digunakan dalam aplikasi CoVision untuk deteksi otomatis:
+    """)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/matang.jpg", caption="Matang", use_container_width=True)
+        st.markdown("""
+        **Matang (Grade A)** - Warna merah merata  
+        - Siap untuk didistribusikan
+        """)
+
+    with col2:
+        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
+        st.markdown("""
+        **Setengah Matang (Grade B)** - Warna kuning  
+        - Masih keras sebagian  
+        - Belum siap didistribusikan, cocok untuk pematangan lanjutan
+        """)
+
+    with col3:
+        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/mentah.jpg", caption="Mentah", use_container_width=True)
+        st.markdown("""
+        **Mentah (Grade C)** - Warna hijau 
+        - Tekstur keras  
+        """)
+
+    st.write("---")
+    st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
+
+
+# ================= DETEKSI (UPLOAD) =================
+def detect_page():
+    st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
+    st.caption("Deteksi Kopi Sekarang!")
+
+    model = st.session_state.model
+    metode = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi Via Webcam"])
+    
+    if metode == "Upload Gambar":
+        files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
+        if files:
+            for f in files:
+                img = Image.open(f).convert("RGB")
+                img = ImageOps.exif_transpose(img)
+                st.image(img, caption="Gambar Asli", use_container_width=True)
+                
+                img_np = np.array(img)
+                
+                with st.spinner("Sedang menganalisis gambar..."):
+                    r = model(img_np)[0]
+                    
+                annotated = Image.fromarray(r.plot()[..., ::-1])
+                st.image(annotated, caption="Hasil Deteksi CoVision", use_container_width=True)
+    else:
+        webcam_detect_page()
+
+
+# ================= DETEKSI (WEBCAM) =================
+def webcam_detect_page():
+    st.header("Webcam Real-Time Detection")
+    model = st.session_state.model
+
+    class VideoProcessor(VideoProcessorBase):
+        def recv(self, frame):
+            img = frame.to_ndarray(format="bgr24")
+            results = model(img)[0]
+            annotated = results.plot()
+            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+
+            return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
+
+    webrtc_streamer(
+        key="webcam",
+        video_processor_factory=VideoProcessor,
+        rtc_configuration=RTCConfiguration(
+            {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+        ),
+        media_stream_constraints={"video": True, "audio": False}
+    )
+
+
+# ================= ALUR NAVIGASI UTAMA =================
+def main_app():
+    with st.sidebar:
+        st.markdown(f"Username")
+        st.markdown(f"👤 **{st.session_state.username}**")
+        st.session_state.sub_page = st.radio("Menu", ["Deteksi", "Tentang Kopi"])
+        if st.button("Logout"):
+            st.session_state.update(logged_in=False, page="login", username="")
+            force_rerun()
+            
+    if st.session_state.sub_page == "Tentang Kopi":
+        about_page()
+    else:
+        detect_page()
+
+# Routing Halaman Aplikasi
+if st.session_state.page == "signup":
+    signup()
+elif not st.session_state.logged_in:
+    login()
+elif st.session_state.page == "main":
+    main_app()
+else:
+    st.session_state.page = "login"
+    login()
