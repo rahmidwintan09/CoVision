@@ -58,12 +58,24 @@ def force_rerun():
 @st.cache_resource
 def load_model():
     MODEL_PATH = "best_kopi.pt"
-    
-    # Deteksi jika file korup/gagal unduh sebelumnya (ukuran 0 atau terlalu kecil)
-    if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 1000000:
-        os.remove(MODEL_PATH)
 
-    # Download model jika belum ada
+    if os.path.exists(MODEL_PATH):
+        is_html = False
+        try:
+            with open(MODEL_PATH, "r", encoding="utf-8", errors="ignore") as f:
+                start_content = f.read(100)
+                if "<html" in start_content.lower() or "<!doctype" in start_content.lower():
+                    is_html = True
+        except:
+            pass
+
+        if is_html or os.path.getsize(MODEL_PATH) < 2000000:
+            try:
+                os.remove(MODEL_PATH)
+            except:
+                pass
+
+
     if not os.path.exists(MODEL_PATH):
         url = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
         try:
@@ -190,7 +202,7 @@ def detect_page():
                 img = ImageOps.exif_transpose(img)
                 st.image(img, caption="Gambar Asli", use_container_width=True)
                 
-                # Mengubah gambar PIL menjadi numpy array agar dapat diproses YOLO
+
                 img_np = np.array(img)
                 
                 with st.spinner("Sedang menganalisis gambar..."):
