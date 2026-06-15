@@ -1,6 +1,7 @@
 import cv2
 import streamlit as st
 from PIL import Image, UnidentifiedImageError, ImageOps
+import numpy as np
 from ultralytics import YOLO
 from fpdf import FPDF
 import tempfile, gdown, os, json, io, datetime
@@ -134,9 +135,13 @@ def about_page():
     st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
 
 def upload_image_detect_page():
-    uploaded_files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
-    st.session_state.uploaded_files = uploaded_files or []
+    uploaded_file = st.file_uploader("Upload gambar", type=["jpg", "png", "jpeg"])
 
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    image = np.array(image)
+
+    r = model(image)[0]
 from ultralytics import YOLO
 import os
 import gdown
