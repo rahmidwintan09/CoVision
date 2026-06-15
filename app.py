@@ -144,6 +144,25 @@ def detect_page():
     MODEL_URL  = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
     MODEL_PATH = "best_kopi.pt"
 
+    @st.cache_resource
+    def load_model():
+        try:
+            # cek file
+            if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1_000_000:
+                st.warning("⚠️ Model tidak valid, download ulang...")
+                gdown.download(MODEL_URL, MODEL_PATH, quiet=False, fuzzy=True)
+    
+            st.write("📦 Model size:", os.path.getsize(MODEL_PATH))
+    
+            model = YOLO(MODEL_PATH)
+            return model, model.names
+    
+        except Exception as e:
+            st.error("❌ Model custom gagal, pakai fallback YOLO bawaan")
+            st.code(str(e))
+    
+            model = YOLO("yolov8n.pt")
+            return model, model.names
     if st.session_state.model is None:
         if not os.path.exists(MODEL_PATH):
             with st.spinner("Mengunduh model…"):
