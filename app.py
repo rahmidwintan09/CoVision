@@ -59,7 +59,8 @@ def force_rerun():
 def load_model():
     MODEL_PATH = "best_kopi.pt"
     
-    GITHUB_RELEASE_URL = "https://github.com/rahmidwintan09/CoVision/blob/b2a48f7b95c9ee11eb37dd277671fe2f58222651/best_kopi.pt"
+    GITHUB_RAW_URL = "https://raw.githubusercontent.com/rahmidwintan09/CoVision/b2a48f7b95c9ee11eb37dd277671fe2f58222651/best_kopi.pt"
+    
     if os.path.exists(MODEL_PATH):
         try:
             with open(MODEL_PATH, "r", encoding="utf-8", errors="ignore") as f:
@@ -68,6 +69,7 @@ def load_model():
                     os.remove(MODEL_PATH)
         except:
             pass
+
     if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 2000000:
         try:
             os.remove(MODEL_PATH)
@@ -75,17 +77,16 @@ def load_model():
             pass
 
     if not os.path.exists(MODEL_PATH):
-        with st.spinner("Mengunduh model AI dari GitHub Releases... Mohon tunggu sebentar."):
+        with st.spinner("Mengunduh model AI dari server GitHub Raw... Mohon tunggu sebentar."):
             try:
                 opener = urllib.request.build_opener()
                 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
                 urllib.request.install_opener(opener)
-                urllib.request.urlretrieve(GITHUB_RELEASE_URL, MODEL_PATH)
+                urllib.request.urlretrieve(GITHUB_RAW_URL, MODEL_PATH)
             except Exception as e:
                 st.error(f"Gagal mengunduh model dari server GitHub: {e}")
-                st.info("Periksa kembali apakah GITHUB_RELEASE_URL Anda valid dan repositorinya bersifat Publik.")
                 st.stop()
-            
+        
     if os.path.exists(MODEL_PATH):
         try:
             with open(MODEL_PATH, "r", encoding="utf-8", errors="ignore") as f:
@@ -109,7 +110,6 @@ def load_model():
         return model, label_names
     except Exception as e:
         st.error(f"Gagal menginisialisasi struktur YOLO: {e}")
-        st.warning("Menghapus berkas yang rusak agar sistem mengunduh ulang pada percobaan berikutnya.")
         try: os.remove(MODEL_PATH)
         except: pass
         st.stop()
@@ -276,10 +276,4 @@ def main_app():
 # Routing Halaman Aplikasi
 if st.session_state.page == "signup":
     signup()
-elif not st.session_state.logged_in:
-    login()
-elif st.session_state.page == "main":
-    main_app()
-else:
-    st.session_state.page = "login"
-    login()
+elif not st.session_state
