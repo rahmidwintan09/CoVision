@@ -181,7 +181,7 @@ def detect_page():
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tf:
                     img.save(tf.name)
                     path = tf.name
-                r = model(path)[0]
+                r = model(image)[0]
                 annotated = Image.fromarray(r.plot()[..., ::-1])
                 st.image(annotated)
                 os.remove(path)
