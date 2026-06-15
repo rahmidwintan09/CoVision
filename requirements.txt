@@ -6,8 +6,12 @@ psycopg2-binary
 bcrypt
 av
 streamlit-webrtc
+
+numpy==1.26.4
+opencv-python-headless==4.8.1.78
+
+torch==2.1.2
+torchvision==0.16.2
+
+ultralytics==8.0.230
 onnxruntime
-torch>=2.1.0
-numpy<2.0.0
-ultralytics>=8.1.0 
-opencv-python-headless==4.9.0.80
