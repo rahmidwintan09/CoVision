@@ -166,6 +166,9 @@ def load_model():
 def detect_page():
     st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
     st.caption("Deteksi Kopi Sekarang!")
+    MODEL_URL  = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
+    MODEL_PATH = "best_kopi.pt"
+
     if "model" not in st.session_state:
         st.session_state.model, st.session_state.label_names = load_model()
     model = st.session_state.model
