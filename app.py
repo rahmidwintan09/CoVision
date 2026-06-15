@@ -58,8 +58,8 @@ def force_rerun():
 @st.cache_resource
 def load_model():
     MODEL_PATH = "best_kopi.pt"
+    MODEL_URL = "https://github.com/rahmidwintan09/CoVision/blob/65305749baa8fbd4c71eefea377709d9a7f31668/best_kopi.pt"
     
-    # Cek dan bersihkan jika file yang ada saat ini korup atau berupa berkas HTML palsu akibat limit kuota
     if os.path.exists(MODEL_PATH):
         is_html = False
         try:
@@ -70,25 +70,21 @@ def load_model():
         except:
             pass
 
-        # Jika berisi HTML atau ukurannya terlalu kecil untuk model YOLO, hapus berkas korup tersebut
         if is_html or os.path.getsize(MODEL_PATH) < 2000000:
             try:
                 os.remove(MODEL_PATH)
             except:
                 pass
 
-    # Jalankan unduhan jika berkas belum ada atau baru saja dihapus karena korup
     if not os.path.exists(MODEL_PATH):
         url = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
         try:
-            # Memperbaiki error: menghapus 'fuzzy=True' agar kompatibel dengan versi gdown di server
             gdown.download(url, MODEL_PATH, quiet=False)
         except Exception as e:
             st.error(f"Gagal mengunduh model dari Google Drive: {e}")
             st.warning("Tips: Google Drive mungkin membatasi unduhan otomatis karena batasan kuota IP server.")
             st.stop()
-            
-    # Validasi pasca-unduh: pastikan yang terunduh bukan file HTML teks peringatan dari Google
+
     if os.path.exists(MODEL_PATH):
         try:
             with open(MODEL_PATH, "r", encoding="utf-8", errors="ignore") as f:
