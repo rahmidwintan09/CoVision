@@ -1,3 +1,5 @@
+import cv2
+print("CV2 VERSION:", cv2.__version__)
 import streamlit as st
 from PIL import Image, UnidentifiedImageError, ExifTags, ImageOps
 from ultralytics import YOLO
