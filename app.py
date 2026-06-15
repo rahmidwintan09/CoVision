@@ -137,11 +137,31 @@ def upload_image_detect_page():
     uploaded_files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
     st.session_state.uploaded_files = uploaded_files or []
 
+from ultralytics import YOLO
+import os
+import gdown
+
+def load_model():
+    MODEL_PATH = "best.pt"
+
+    # download model kalau belum ada
+    if not os.path.exists(MODEL_PATH):
+        url = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
+        gdown.download(url, MODEL_PATH, quiet=False)
+
+    # load model
+    model = YOLO(MODEL_PATH)
+
+    # ambil label (class names)
+    label_names = model.names
+
+    return model, label_names
+
 # ================= DETECT =================
 def detect_page():
     st.title("Deteksi Kopi")
 
-    if st.session_state.model is None:
+    if "model" not in st.session_state:
         st.session_state.model, st.session_state.label_names = load_model()
 
     model = st.session_state.model
