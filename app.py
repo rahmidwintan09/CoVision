@@ -230,7 +230,7 @@ def detect_page():
     if uploaded_files:
         pdf_bytes = pdf.output(dest="S").encode("latin1")
         st.download_button("Download Semua Laporan (PDF)",
-                           pdf_bytes, "laporan_tomatect.pdf", "application/pdf")
+                           pdf_bytes, "laporan_covision.pdf", "application/pdf")
 
 # ================= WEBCAM (OPTIMIZED) =================
 def webcam_detect_page():
