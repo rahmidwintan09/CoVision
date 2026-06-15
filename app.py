@@ -152,7 +152,7 @@ def load_model():
     # download model kalau belum ada
     if not os.path.exists(MODEL_PATH):
         url = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
-        gdown.download(url, MODEL_PATH, quiet=False)
+        gdown.download(url, MODEL_PATH, quiet=True, fuzzy=True)
 
     # load model
     model = YOLO(MODEL_PATH)
@@ -166,23 +166,42 @@ def load_model():
 def detect_page():
     st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
     st.caption("Deteksi Kopi Sekarang!")
-    if "model" not in st.session_state:
+
+    if st.session_state.model is None:
         st.session_state.model, st.session_state.label_names = load_model()
+
     model = st.session_state.model
+
+    if model is None:
+        st.error("❌ Model gagal dimuat")
+        return
+
+    st.write("DEBUG model:", type(model))
+
     metode = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi Via Webcam"])
+
     if metode == "Upload Gambar":
         files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True)
+
         if files:
-            pdf = FPDF()
             for f in files:
                 img = Image.open(f).convert("RGB")
                 img = ImageOps.exif_transpose(img)
+
                 st.image(img)
+
                 img_np = np.array(img)
-                img_np = img_np.astype(np.uint8)
-                r = model(img_np)[0]
+
+                try:
+                    results = model(img_np)
+                    r = results[0]
+                except Exception as e:
+                    st.error(f"❌ Error deteksi: {e}")
+                    return
+
                 annotated = Image.fromarray(r.plot()[..., ::-1])
                 st.image(annotated)
+
     else:
         webcam_detect_page()
 
