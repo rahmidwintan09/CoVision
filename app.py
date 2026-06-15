@@ -215,7 +215,7 @@ def main_app():
         st.markdown(f"Username")
         st.markdown(f"👤 **{st.session_state.username}**")
         st.session_state.sub_page = st.radio("Menu", ["Deteksi", "Tentang Kopi"])
-        if st.button("Logout"):a
+        if st.button("Logout"):
             st.session_state.update(logged_in=False, page="login", username="")
             force_rerun()
     if st.session_state.sub_page == "Tentang Kopi":
