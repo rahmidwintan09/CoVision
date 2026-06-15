@@ -58,8 +58,7 @@ def force_rerun():
 @st.cache_resource
 def load_model():
     MODEL_PATH = "best_kopi.pt"
-    
-    GITHUB_RAW_URL = "https://raw.githubusercontent.com/rahmidwintan09/CoVision/b2a48f7b95c9ee11eb37dd277671fe2f58222651/best_kopi.pt"
+    MODEL_URL = "https://drive.google.com/file/d/14XeE8fmUgsvJsHisBevysolxwsGdMP2H/view?usp=drive_link"
     
     if os.path.exists(MODEL_PATH):
         try:
