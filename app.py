@@ -95,7 +95,7 @@ def login():
 
 # ================= DETECT =================
 def detect_page():
-    st.title(CoVision: Deteksi Tingkat Kematangan Buah Kopi")
+    st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
     st.caption("Deteksi Kopi Sekarang!")
 
     if st.session_state.model is None:
