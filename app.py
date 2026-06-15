@@ -58,7 +58,8 @@ def force_rerun():
 @st.cache_resource
 def load_model():
     MODEL_PATH = "best_kopi.pt"
-
+    
+    # Cek dan bersihkan jika file yang ada saat ini korup atau berupa berkas HTML palsu akibat limit kuota
     if os.path.exists(MODEL_PATH):
         is_html = False
         try:
@@ -69,21 +70,37 @@ def load_model():
         except:
             pass
 
+        # Jika berisi HTML atau ukurannya terlalu kecil untuk model YOLO, hapus berkas korup tersebut
         if is_html or os.path.getsize(MODEL_PATH) < 2000000:
             try:
                 os.remove(MODEL_PATH)
             except:
                 pass
 
-
+    # Jalankan unduhan jika berkas belum ada atau baru saja dihapus karena korup
     if not os.path.exists(MODEL_PATH):
         url = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
         try:
-            gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
+            # Memperbaiki error: menghapus 'fuzzy=True' agar kompatibel dengan versi gdown di server
+            gdown.download(url, MODEL_PATH, quiet=False)
         except Exception as e:
             st.error(f"Gagal mengunduh model dari Google Drive: {e}")
+            st.warning("Tips: Google Drive mungkin membatasi unduhan otomatis karena batasan kuota IP server.")
             st.stop()
             
+    # Validasi pasca-unduh: pastikan yang terunduh bukan file HTML teks peringatan dari Google
+    if os.path.exists(MODEL_PATH):
+        try:
+            with open(MODEL_PATH, "r", encoding="utf-8", errors="ignore") as f:
+                start_content = f.read(100)
+                if "<html" in start_content.lower() or "<!doctype" in start_content.lower():
+                    st.error("Google Drive mengembalikan halaman limit kuota (HTML), bukan file model asli. Silakan hapus instans atau klik 'Reboot App' pada dashboard Streamlit beberapa saat lagi.")
+                    try: os.remove(MODEL_PATH)
+                    except: pass
+                    st.stop()
+        except:
+            pass
+
     if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) == 0:
         st.error("File model kosong atau tidak ditemukan. Coba refresh halaman.")
         st.stop()
@@ -151,115 +168,4 @@ def login():
     st.button("Belum punya akun? Daftar", key="signup_button", on_click=lambda: st.session_state.update(page="signup"))
 
 
-# ================= HALAMAN UTAMA & KONTEN =================
-def about_page():
-    st.title("Tingkat Kematangan Buah Kopi")
-    st.write("""
-    Kematangan buah kopi merupakan indikator penting dalam penentuan kualitas, rasa, serta waktu panen dan distribusi. Berikut adalah tiga kategori utama tingkat kematangan buah kopi yang digunakan dalam aplikasi CoVision untuk deteksi otomatis:
-    """)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/matang.jpg", caption="Matang", use_container_width=True)
-        st.markdown("""
-        **Matang (Grade A)** - Warna merah merata  
-        - Siap untuk didistribusikan
-        """)
-
-    with col2:
-        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
-        st.markdown("""
-        **Setengah Matang (Grade B)** - Warna kuning  
-        - Masih keras sebagian  
-        - Belum siap didistribusikan, cocok untuk pematangan lanjutan
-        """)
-
-    with col3:
-        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/mentah.jpg", caption="Mentah", use_container_width=True)
-        st.markdown("""
-        **Mentah (Grade C)** - Warna hijau 
-        - Tekstur keras  
-        """)
-
-    st.write("---")
-    st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
-
-
-# ================= DETEKSI (UPLOAD) =================
-def detect_page():
-    st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
-    st.caption("Deteksi Kopi Sekarang!")
-
-    model = st.session_state.model
-    metode = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi Via Webcam"])
-    
-    if metode == "Upload Gambar":
-        files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
-        if files:
-            for f in files:
-                img = Image.open(f).convert("RGB")
-                img = ImageOps.exif_transpose(img)
-                st.image(img, caption="Gambar Asli", use_container_width=True)
-                
-
-                img_np = np.array(img)
-                
-                with st.spinner("Sedang menganalisis gambar..."):
-                    r = model(img_np)[0]
-                    
-                annotated = Image.fromarray(r.plot()[..., ::-1])
-                st.image(annotated, caption="Hasil Deteksi CoVision", use_container_width=True)
-    else:
-        webcam_detect_page()
-
-
-# ================= DETEKSI (WEBCAM) =================
-def webcam_detect_page():
-    st.header("Webcam Real-Time Detection")
-    model = st.session_state.model
-
-    class VideoProcessor(VideoProcessorBase):
-        def recv(self, frame):
-            img = frame.to_ndarray(format="bgr24")
-            results = model(img)[0]
-            annotated = results.plot()
-            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-
-            return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
-
-    webrtc_streamer(
-        key="webcam",
-        video_processor_factory=VideoProcessor,
-        rtc_configuration=RTCConfiguration(
-            {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
-        ),
-        media_stream_constraints={"video": True, "audio": False}
-    )
-
-
-# ================= ALUR NAVIGASI UTAMA =================
-def main_app():
-    with st.sidebar:
-        st.markdown(f"Username")
-        st.markdown(f"👤 **{st.session_state.username}**")
-        st.session_state.sub_page = st.radio("Menu", ["Deteksi", "Tentang Kopi"])
-        if st.button("Logout"):
-            st.session_state.update(logged_in=False, page="login", username="")
-            force_rerun()
-            
-    if st.session_state.sub_page == "Tentang Kopi":
-        about_page()
-    else:
-        detect_page()
-
-# Routing Halaman Aplikasi
-if st.session_state.page == "signup":
-    signup()
-elif not st.session_state.logged_in:
-    login()
-elif st.session_state.page == "main":
-    main_app()
-else:
-    st.session_state.page = "login"
-    login()
+# ================= HALAMAN UTAMA & KONTEN =
