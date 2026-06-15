@@ -141,7 +141,7 @@ def detect_page():
     st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
     st.caption("Deteksi Kopi Sekarang!")
 
-    MODEL_URL  = "MODEL_URL = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl""
+    MODEL_URL  = "MODEL_URL = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
     MODEL_PATH = "best_kopi.pt"
 
     if st.session_state.model is None:
