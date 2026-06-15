@@ -156,7 +156,7 @@ def detect_page():
 
         if not os.path.exists(MODEL_PATH):
             with st.spinner("Mengunduh model…"):
-                gdown.download(MODEL_URL, MODEL_PATH, quiet=True, fuzzy=True)
+                gdown.download(MODEL_URL, MODEL_PATH, quiet=True)
 
         if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
             st.error("❌ Model corrupt / gagal download")
