@@ -179,10 +179,10 @@ def detect_page():
                 img = ImageOps.exif_transpose(img)
                 st.image(img)
                 img_np = np.array(img)
+                img_np = img_np.astype(np.uint8)
                 r = model(img_np)[0]
                 annotated = Image.fromarray(r.plot()[..., ::-1])
                 st.image(annotated)
-                os.remove(path)
     else:
         webcam_detect_page()
 
