@@ -204,10 +204,7 @@ def webcam_detect_page():
     class VideoProcessor(VideoProcessorBase):
         def recv(self, frame):
             img = frame.to_ndarray(format="bgr24")
-
-            # 🔥 langsung infer (NO FILE)
             results = model(img)[0]
-
             annotated = results.plot()
             annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
 
