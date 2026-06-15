@@ -136,33 +136,38 @@ def about_page():
     st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
 
 def upload_image_detect_page():
-    uploaded_file = st.file_uploader("Upload gambar kopi", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
+    uploaded_files = st.file_uploader(
+        "Upload gambar kopi",
+        accept_multiple_files=True,
+        type=["jpg", "jpeg", "png"]
+    )
     st.session_state.uploaded_files = uploaded_files or []
-
+    
 def detect_page():
     st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
+
     MODEL_URL  = "https://drive.google.com/uc?id=14XeE8fmUgsvJsHisBevysolxwsGdMP2H"
     MODEL_PATH = "best_kopi.pt"
 
-if st.session_state.model is None:
-    if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 1000000:
-        os.remove(MODEL_PATH)
+    if st.session_state.model is None:
 
-    if not os.path.exists(MODEL_PATH):
-        with st.spinner("Mengunduh model…"):
-            gdown.download(MODEL_URL, MODEL_PATH, quiet=True, fuzzy=True)
+        if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 1000000:
+            os.remove(MODEL_PATH)
 
-    # validasi file
-    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
-        st.error("❌ Model corrupt / gagal download")
+        if not os.path.exists(MODEL_PATH):
+            with st.spinner("Mengunduh model…"):
+                gdown.download(MODEL_URL, MODEL_PATH, quiet=True, fuzzy=True)
+
+        if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
+            st.error("❌ Model corrupt / gagal download")
+            return 
+
+        try:
+            st.session_state.model = YOLO(MODEL_PATH)
+            st.session_state.label_names = st.session_state.model.names
+        except Exception as e:
+            st.error(f"❌ Gagal load model: {e}")
             return
-
-    try:
-        st.session_state.model = YOLO(MODEL_PATH)
-        st.session_state.label_names = st.session_state.model.names
-    except Exception as e:
-        st.error(f"❌ Gagal load model: {e}")
-        return
         st.session_state.model = YOLO(MODEL_PATH)
         st.session_state.label_names = st.session_state.model.names
     st.markdown("---")
