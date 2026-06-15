@@ -155,7 +155,7 @@ if st.session_state.model is None:
     # validasi file
     if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
         st.error("❌ Model corrupt / gagal download")
-        return
+            return
 
     try:
         st.session_state.model = YOLO(MODEL_PATH)
