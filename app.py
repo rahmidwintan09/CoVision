@@ -8,6 +8,7 @@ import tempfile, gdown, os, json, io, datetime
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 import av
 
+# ================= KUSTOMISASI TEMA =================
 st.markdown(
     """
     <style id="auto-theme">
@@ -47,27 +48,67 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
+# ================= FUNGSI UTILITAS & LOAD MODEL =================
 def force_rerun():
     if hasattr(st, "rerun"):
         st.rerun()
     else:
         st.experimental_rerun()
 
+@st.cache_resource
+def load_model():
+    MODEL_PATH = "best_kopi.pt"
+    
+    # Deteksi jika file korup/gagal unduh sebelumnya (ukuran 0 atau terlalu kecil)
+    if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 1000000:
+        os.remove(MODEL_PATH)
+
+    # Download model jika belum ada
+    if not os.path.exists(MODEL_PATH):
+        url = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
+        try:
+            gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
+        except Exception as e:
+            st.error(f"Gagal mengunduh model dari Google Drive: {e}")
+            st.stop()
+            
+    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) == 0:
+        st.error("File model kosong atau tidak ditemukan. Coba refresh halaman.")
+        st.stop()
+
+    model = YOLO(MODEL_PATH)
+    label_names = model.names
+    return model, label_names
+
+
+# Konfigurasi halaman diletakkan di awal eksekusi utama streamlit
 st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
 
-
+# ================= MANAJEMEN USER =================
 USER_FILE = "users.json"
 def load_users():
     return json.load(open(USER_FILE)) if os.path.exists(USER_FILE) else {}
-def save_users(u): json.dump(u, open(USER_FILE, "w"))
+def save_users(u): 
+    json.dump(u, open(USER_FILE, "w"))
 
 users = load_users()
-defaults = { "logged_in": False, "page": "login", "username": "",
-             "model": None, "label_names": {}, "sub_page": "Deteksi" }
+
+# Mengatasi bug inisialisasi awal session state
+defaults = { 
+    "logged_in": False, 
+    "page": "login", 
+    "username": "",
+    "sub_page": "Deteksi" 
+}
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
 
+# Load model dan simpan ke state JIKA belum ada atau masih None
+if "model" not in st.session_state or st.session_state.model is None:
+    with st.spinner("Memuat Model AI CoVision... Mohon tunggu"):
+        st.session_state.model, st.session_state.label_names = load_model()
+
+# ================= HALAMAN LOGIN & DAFTAR =================
 def signup():
     st.title("Daftar Akun")
     u = st.text_input("Username Baru")
@@ -98,6 +139,7 @@ def login():
     st.button("Belum punya akun? Daftar", key="signup_button", on_click=lambda: st.session_state.update(page="signup"))
 
 
+# ================= HALAMAN UTAMA & KONTEN =================
 def about_page():
     st.title("Tingkat Kematangan Buah Kopi")
     st.write("""
@@ -109,16 +151,14 @@ def about_page():
     with col1:
         st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/matang.jpg", caption="Matang", use_container_width=True)
         st.markdown("""
-        **Matang (Grade A)**  
-        - Warna merah merata  
+        **Matang (Grade A)** - Warna merah merata  
         - Siap untuk didistribusikan
         """)
 
     with col2:
         st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
         st.markdown("""
-        **Setengah Matang (Grade B)**  
-        - Warna kuning  
+        **Setengah Matang (Grade B)** - Warna kuning  
         - Masih keras sebagian  
         - Belum siap didistribusikan, cocok untuk pematangan lanjutan
         """)
@@ -126,73 +166,45 @@ def about_page():
     with col3:
         st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/50e0f52a5a238eb3735c3e2d3b407113fa27fa5a/images/mentah.jpg", caption="Mentah", use_container_width=True)
         st.markdown("""
-        **Mentah (Grade C)**  
-        - Warna hijau 
+        **Mentah (Grade C)** - Warna hijau 
         - Tekstur keras  
         """)
 
     st.write("---")
     st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
 
-def upload_image_detect_page():
-    uploaded_file = st.file_uploader("Upload gambar", type=["jpg", "png", "jpeg"])
 
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        image = np.array(image)
-    
-        r = model(image)[0]
-from ultralytics import YOLO
-import os
-import gdown
-
-def load_model():
-    MODEL_PATH = "best_kopi.pt"
-
-    # download model kalau belum ada
-    if not os.path.exists(MODEL_PATH):
-        url = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
-        gdown.download(url, MODEL_PATH, quiet=False)
-
-    # load model
-    model = YOLO(MODEL_PATH)
-
-    # ambil label (class names)
-    label_names = model.names
-
-    return model, label_names
-
-# ================= DETECT =================
+# ================= DETEKSI (UPLOAD) =================
 def detect_page():
     st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
     st.caption("Deteksi Kopi Sekarang!")
-    MODEL_URL  = "https://drive.google.com/uc?id=1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl"
-    MODEL_PATH = "best_kopi.pt"
 
-    if "model" not in st.session_state:
-        st.session_state.model, st.session_state.label_names = load_model()
     model = st.session_state.model
     metode = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi Via Webcam"])
+    
     if metode == "Upload Gambar":
-        files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True)
+        files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
         if files:
-            pdf = FPDF()
             for f in files:
                 img = Image.open(f).convert("RGB")
                 img = ImageOps.exif_transpose(img)
-                st.image(img)
+                st.image(img, caption="Gambar Asli", use_container_width=True)
+                
+                # Mengubah gambar PIL menjadi numpy array agar dapat diproses YOLO
                 img_np = np.array(img)
-                img_np = img_np.astype(np.uint8)
-                r = model(img_np)[0]
+                
+                with st.spinner("Sedang menganalisis gambar..."):
+                    r = model(img_np)[0]
+                    
                 annotated = Image.fromarray(r.plot()[..., ::-1])
-                st.image(annotated)
+                st.image(annotated, caption="Hasil Deteksi CoVision", use_container_width=True)
     else:
         webcam_detect_page()
 
-# ================= WEBCAM (OPTIMIZED) =================
+
+# ================= DETEKSI (WEBCAM) =================
 def webcam_detect_page():
     st.header("Webcam Real-Time Detection")
-
     model = st.session_state.model
 
     class VideoProcessor(VideoProcessorBase):
@@ -213,6 +225,8 @@ def webcam_detect_page():
         media_stream_constraints={"video": True, "audio": False}
     )
 
+
+# ================= ALUR NAVIGASI UTAMA =================
 def main_app():
     with st.sidebar:
         st.markdown(f"Username")
@@ -221,11 +235,13 @@ def main_app():
         if st.button("Logout"):
             st.session_state.update(logged_in=False, page="login", username="")
             force_rerun()
+            
     if st.session_state.sub_page == "Tentang Kopi":
         about_page()
     else:
         detect_page()
 
+# Routing Halaman Aplikasi
 if st.session_state.page == "signup":
     signup()
 elif not st.session_state.logged_in:
@@ -233,4 +249,5 @@ elif not st.session_state.logged_in:
 elif st.session_state.page == "main":
     main_app()
 else:
-    st.session_state.page = "login"; login()
+    st.session_state.page = "login"
+    login()
