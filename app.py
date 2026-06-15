@@ -103,10 +103,10 @@ def detect_page():
 
     model = st.session_state.model
 
-    metode = st.radio("Metode", ["Upload", "Webcam"])
+    metode = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi Via Webcam"])
 
-    if metode == "Upload":
-        files = st.file_uploader("Upload", accept_multiple_files=True)
+    if metode == "Upload Gambar":
+        files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True)
 
         if files:
             pdf = FPDF()
