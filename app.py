@@ -276,4 +276,4 @@ def main_app():
 # Routing Halaman Aplikasi
 if st.session_state.page == "signup":
     signup()
-elif not st.session_state
+elif not st.session_state:
