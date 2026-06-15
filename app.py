@@ -147,7 +147,7 @@ import os
 import gdown
 
 def load_model():
-    MODEL_PATH = "best.pt"
+    MODEL_PATH = "best_kopi.pt"
 
     # download model kalau belum ada
     if not os.path.exists(MODEL_PATH):
