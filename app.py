@@ -276,4 +276,10 @@ def main_app():
 # Routing Halaman Aplikasi
 if st.session_state.page == "signup":
     signup()
-elif not st.session_state:
+elif not st.session_state.logged_in:
+    login()  
+elif st.session_state.page == "main":
+    main_app()  
+else:
+    st.session_state.page = "login"
+    login()
