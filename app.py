@@ -161,37 +161,25 @@ def load_model():
 def detect_page():
     st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
     st.caption("Deteksi Kopi Sekarang!")
-
     if "model" not in st.session_state:
         st.session_state.model, st.session_state.label_names = load_model()
-
     model = st.session_state.model
-
     metode = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi Via Webcam"])
-
     if metode == "Upload Gambar":
         files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True)
-
         if files:
             pdf = FPDF()
-
             for f in files:
                 img = Image.open(f).convert("RGB")
                 img = ImageOps.exif_transpose(img)
-
                 st.image(img)
-
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tf:
                     img.save(tf.name)
                     path = tf.name
-
                 r = model(path)[0]
                 annotated = Image.fromarray(r.plot()[..., ::-1])
-
                 st.image(annotated)
-
                 os.remove(path)
-
     else:
         webcam_detect_page()
 
