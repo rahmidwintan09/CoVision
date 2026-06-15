@@ -143,11 +143,8 @@ def detect_page():
     st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
     MODEL_URL  = "https://drive.google.com/uc?id=14XeE8fmUgsvJsHisBevysolxwsGdMP2H"
     MODEL_PATH = "best_kopi.pt"
-    MODEL_URL  = "https://drive.google.com/uc?id=14XeE8fmUgsvJsHisBevysolxwsGdMP2H"
-MODEL_PATH = "best_kopi.pt"
 
 if st.session_state.model is None:
-    # hapus file corrupt
     if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 1000000:
         os.remove(MODEL_PATH)
 
@@ -158,7 +155,7 @@ if st.session_state.model is None:
     # validasi file
     if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
         st.error("❌ Model corrupt / gagal download")
-            return
+        return
 
     try:
         st.session_state.model = YOLO(MODEL_PATH)
