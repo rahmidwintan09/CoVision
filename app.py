@@ -81,7 +81,7 @@ def load_model():
                 opener = urllib.request.build_opener()
                 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
                 urllib.request.install_opener(opener)
-                urllib.request.urlretrieve(GITHUB_RAW_URL, MODEL_PATH)
+                urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
             except Exception as e:
                 st.error(f"Gagal mengunduh model dari server GitHub: {e}")
                 st.stop()
