@@ -178,10 +178,8 @@ def detect_page():
                 img = Image.open(f).convert("RGB")
                 img = ImageOps.exif_transpose(img)
                 st.image(img)
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tf:
-                    img.save(tf.name)
-                    path = tf.name
-                r = model(image)[0]
+                img_np = np.array(img)
+                r = model(img_np)[0]
                 annotated = Image.fromarray(r.plot()[..., ::-1])
                 st.image(annotated)
                 os.remove(path)
