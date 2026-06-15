@@ -137,11 +137,11 @@ def about_page():
 def upload_image_detect_page():
     uploaded_file = st.file_uploader("Upload gambar", type=["jpg", "png", "jpeg"])
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    image = np.array(image)
-
-    r = model(image)[0]
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        image = np.array(image)
+    
+        r = model(image)[0]
 from ultralytics import YOLO
 import os
 import gdown
