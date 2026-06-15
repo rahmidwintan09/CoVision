@@ -197,7 +197,7 @@ def detect_page():
 
 # ================= WEBCAM (OPTIMIZED) =================
 def webcam_detect_page():
-    st.header("Webcam Detection")
+    st.header("Webcam Real-Time Detection")
 
     model = st.session_state.model
 
