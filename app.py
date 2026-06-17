@@ -213,30 +213,34 @@ def detect_page():
 def webcam_detect_page():
     st.header("Deteksi kopi via Webcam (Real-Time)")
     st.write("Aktifkan webcam untuk mendeteksi kopi secara langsung melalui browser.")
+
     model = st.session_state.model
 
     class VideoProcessor(VideoProcessorBase):
         def recv(self, frame):
             img = frame.to_ndarray(format="bgr24")
-            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-                cv2.imwrite(tmp.name, img)
-                try:
-                    results = model(tmp.name)[0]
-                finally:
-                    os.remove(tmp.name)
+            results = model(img)[0]
+
             annotated = results.plot()
             annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+
             return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
 
     webrtc_streamer(
-    key="webcam",
-    rtc_configuration={
-        "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},
-            {"urls": ["stun:global.stun.twilio.com:3478"]}
-        ]
-    }
-)
+        key="webcam",  
+        video_processor_factory=VideoProcessor,  
+        rtc_configuration={
+            "iceServers": [
+                {"urls": ["stun:stun.l.google.com:19302"]},
+                {"urls": ["stun:global.stun.twilio.com:3478"]}
+            ]
+        },
+        media_stream_constraints={
+            "video": True,
+            "audio": False
+        },
+        async_processing=True
+    )
 
 
 def main_app():
