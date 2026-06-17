@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
+
 from PIL import Image, UnidentifiedImageError, ExifTags, ImageOps
 from ultralytics import YOLO
 from fpdf import FPDF
@@ -51,9 +53,6 @@ def force_rerun():
         st.rerun()
     else:
         st.experimental_rerun()
-
-st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
-
 
 USER_FILE = "users.json"
 def load_users():
