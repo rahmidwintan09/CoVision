@@ -66,6 +66,10 @@ defaults = { "logged_in": False, "page": "login", "username": "",
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
 
+# Objek penampung global untuk thread VideoProcessor (Menghindari st.session_state di dalam thread)
+class ModelContainer:
+    yolo_model = None
+
 def signup():
     st.title("Daftar Akun")
     u = st.text_input("Username Baru")
@@ -156,11 +160,17 @@ def detect_page():
             return 
 
         try:
-            st.session_state.model = YOLO(MODEL_PATH)
-            st.session_state.label_names = st.session_state.model.names
+            loaded_model = YOLO(MODEL_PATH)
+            st.session_state.model = loaded_model
+            st.session_state.label_names = loaded_model.names
+            ModelContainer.yolo_model = loaded_model # Simpan ke container global
         except Exception as e:
             st.error(f"❌ Gagal load model: {e}")
             return
+    else:
+        # Menjamin container global tetap terisi meskipun halaman di-refresh
+        if ModelContainer.yolo_model is None:
+            ModelContainer.yolo_model = st.session_state.model
 
     st.markdown("---")
     st.session_state.detection_method = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi via Webcam"],
@@ -224,19 +234,18 @@ def detect_page():
         st.download_button("Download Semua Laporan (PDF)",
                            pdf_bytes, "laporan_covision.pdf", "application/pdf")
 
-# ================= WEBCAM (PERBAIKAN MARSHALL EXCEPTION) =================
+# ================= WEBCAM (PERBAIKAN PERLINDUNGAN THREAD) =================
 class VideoProcessor(VideoProcessorBase):
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
         
-        # Mengakses model langsung dari global state aplikasi tanpa memparsing objek lewat streamlit component parameter
-        if "model" in st.session_state and st.session_state.model is not None:
-            results = st.session_state.model(img, verbose=False)[0]
+        # Mengakses model dari container static class (Aman dari pembatasan thread Streamlit)
+        if ModelContainer.yolo_model is not None:
+            results = ModelContainer.yolo_model(img, verbose=False)[0]
             annotated = results.plot()
             annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
             return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
         
-        # Kembalikan frame asli jika model belum siap
         return frame
 
 def webcam_detect_page():
@@ -247,7 +256,6 @@ def webcam_detect_page():
         st.warning("Model belum dimuat. Silakan tunggu beberapa saat.")
         return
 
-    # SANGAT PENTING: Jangan masukkan argumen/variabel model ke dalam pemanggilan fungsi webrtc_streamer ini
     webrtc_streamer(
         key="yolo-stream",
         video_processor_factory=VideoProcessor,
