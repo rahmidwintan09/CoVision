@@ -7,6 +7,7 @@ import tempfile, gdown, os, json, io, datetime
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 import av
 
+st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
 st.markdown(
     """
     <style id="auto-theme">
@@ -46,14 +47,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 def force_rerun():
     if hasattr(st, "rerun"):
         st.rerun()
     else:
         st.experimental_rerun()
 
-st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
+
 
 
 USER_FILE = "users.json"
