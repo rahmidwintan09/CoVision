@@ -101,10 +101,13 @@ def about_page():
     Kematangan buah kopi merupakan indikator penting dalam penentuan kualitas, rasa, serta waktu panen dan distribusi. Berikut adalah tiga kategori utama tingkat kematangan buah kopi yang digunakan dalam aplikasi CoVision untuk deteksi otomatis:
     """)
 
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.image("images/matang.jpg", caption="Matang", use_container_width=True)
+        img1 = Image.open(os.path.join(BASE_DIR, "images", "matang.jpg"))
+        st.image(img1, caption="Matang", use_container_width=True)
         st.markdown("""
         **Matang (Grade A)**  
         - Warna merah merata  
@@ -112,7 +115,8 @@ def about_page():
         """)
 
     with col2:
-        st.image("images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
+        img2 = Image.open(os.path.join(BASE_DIR, "images", "setengah_matang.jpg"))
+        st.image(img2, caption="Setengah Matang", use_container_width=True)
         st.markdown("""
         **Setengah Matang (Grade B)**  
         - Warna kuning  
@@ -121,7 +125,8 @@ def about_page():
         """)
 
     with col3:
-        st.image("images/mentah.jpg", caption="Mentah", use_container_width=True)
+        img3 = Image.open(os.path.join(BASE_DIR, "images", "mentah.jpg"))
+        st.image(img3, caption="Mentah", use_container_width=True)
         st.markdown("""
         **Mentah (Grade C)**  
         - Warna hijau 
