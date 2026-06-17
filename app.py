@@ -108,7 +108,7 @@ def about_page():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.image("https://drive.google.com/uc?id=1y4d6kQ4Idz2ZUWhvFVKC8fmmJahgQFxc", caption="Matang", use_container_width=True)
+        st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/matang.jpg", caption="Matang", use_container_width=True)
         st.markdown("""
         **Matang (Grade A)**  
         - Warna merah merata  
@@ -116,7 +116,7 @@ def about_page():
         """)
 
     with col2:
-        st.image("https://drive.google.com/uc?id=1v_rtKb_sxFOmI_72_J2CP5IQ-8kt5Hh6", caption="Setengah Matang", use_container_width=True)
+        st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
         st.markdown("""
         **Setengah Matang (Grade B)**  
         - Warna kuning  
@@ -125,7 +125,7 @@ def about_page():
         """)
 
     with col3:
-        st.image("https://drive.google.com/uc?id=1Zc4fC0O4VMBpJtPs5G9Hv6xqhkPqCi4g", caption="Mentah", use_container_width=True)
+        st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/mentah.jpg", caption="Mentah", use_container_width=True)
         st.markdown("""
         **Mentah (Grade C)**  
         - Warna hijau 
