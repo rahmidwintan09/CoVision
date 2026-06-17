@@ -66,9 +66,32 @@ defaults = { "logged_in": False, "page": "login", "username": "",
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
 
-# Objek penampung global untuk thread VideoProcessor (Menghindari st.session_state di dalam thread)
-class ModelContainer:
-    yolo_model = None
+
+# ================= AMANKAN MODEL & PEMROSES DENGAN CACHE RESOURSE =================
+@st.cache_resource
+def get_yolo_model(model_path):
+    """Memuat model ke memori secara permanen (Singleton pattern)"""
+    return YOLO(model_path)
+
+class VideoProcessor(VideoProcessorBase):
+    def __init__(self):
+        # Memuat model langsung di dalam init class, terisolasi dari alur Streamlit utama
+        MODEL_PATH = "best_kopi.pt"
+        self.model = None
+        if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) > 1000000:
+            self.model = YOLO(MODEL_PATH)
+
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        
+        if self.model is not None:
+            results = self.model(img, verbose=False)[0]
+            annotated = results.plot()
+            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+            return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
+        
+        return frame
+
 
 def signup():
     st.title("Daftar Akun")
@@ -160,17 +183,12 @@ def detect_page():
             return 
 
         try:
-            loaded_model = YOLO(MODEL_PATH)
-            st.session_state.model = loaded_model
-            st.session_state.label_names = loaded_model.names
-            ModelContainer.yolo_model = loaded_model # Simpan ke container global
+            # Gunakan fungsi cache resmi streamlit untuk memuat model gambar statis
+            st.session_state.model = get_yolo_model(MODEL_PATH)
+            st.session_state.label_names = st.session_state.model.names
         except Exception as e:
             st.error(f"❌ Gagal load model: {e}")
             return
-    else:
-        # Menjamin container global tetap terisi meskipun halaman di-refresh
-        if ModelContainer.yolo_model is None:
-            ModelContainer.yolo_model = st.session_state.model
 
     st.markdown("---")
     st.session_state.detection_method = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi via Webcam"],
@@ -234,30 +252,20 @@ def detect_page():
         st.download_button("Download Semua Laporan (PDF)",
                            pdf_bytes, "laporan_covision.pdf", "application/pdf")
 
-# ================= WEBCAM (PERBAIKAN PERLINDUNGAN THREAD) =================
-class VideoProcessor(VideoProcessorBase):
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        
-        # Mengakses model dari container static class (Aman dari pembatasan thread Streamlit)
-        if ModelContainer.yolo_model is not None:
-            results = ModelContainer.yolo_model(img, verbose=False)[0]
-            annotated = results.plot()
-            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-            return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
-        
-        return frame
 
+# ================= WEBCAM CLEAN RUNNER =================
 def webcam_detect_page():
     st.header("Webcam Real-Time Detection")
     st.write("Aktifkan webcam untuk mendeteksi kopi secara langsung melalui browser.")
     
-    if st.session_state.model is None:
-        st.warning("Model belum dimuat. Silakan tunggu beberapa saat.")
+    MODEL_PATH = "best_kopi.pt"
+    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
+        st.warning("Model belum siap atau sedang diunduh di tab sebelah. Silakan klik opsi 'Upload Gambar' lalu kembali ke sini.")
         return
 
+    # Pemanggilan murni bersih tanpa parameter dinamis dari Streamlit state
     webrtc_streamer(
-        key="yolo-stream",
+        key="yolo-stream-v3", # Menggunakan key baru untuk mereset komponen yang bermasalah di browser
         video_processor_factory=VideoProcessor,
         rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
         media_stream_constraints={"video": True, "audio": False}
