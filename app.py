@@ -53,9 +53,6 @@ def force_rerun():
     else:
         st.experimental_rerun()
 
-
-
-
 USER_FILE = "users.json"
 def load_users():
     return json.load(open(USER_FILE)) if os.path.exists(USER_FILE) else {}
@@ -108,27 +105,24 @@ def about_page():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/main/images/matang.jpg", caption="Matang", use_container_width=True)
+        st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/matang.jpg", caption="Matang", use_container_width=True)
         st.markdown("""
-        **Matang (Grade A)**  
-        - Warna merah merata  
+        **Matang (Grade A)** - Warna merah merata  
         - Siap untuk didistribusikan
         """)
 
     with col2:
-        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/main/images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
+        st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
         st.markdown("""
-        **Setengah Matang (Grade B)**  
-        - Warna kuning  
+        **Setengah Matang (Grade B)** - Warna kuning  
         - Masih keras sebagian  
         - Belum siap didistribusikan, cocok untuk pematangan lanjutan
         """)
 
     with col3:
-        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/main/images/mentah.jpg", caption="Mentah", use_container_width=True)
+        st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/mentah.jpg", caption="Mentah", use_container_width=True)
         st.markdown("""
-        **Mentah (Grade C)**  
-        - Warna hijau 
+        **Mentah (Grade C)** - Warna hijau 
         - Tekstur keras  
         """)
 
@@ -150,7 +144,6 @@ def detect_page():
     MODEL_PATH = "best_kopi.pt"
 
     if st.session_state.model is None:
-
         if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 1000000:
             os.remove(MODEL_PATH)
 
@@ -168,8 +161,7 @@ def detect_page():
         except Exception as e:
             st.error(f"❌ Gagal load model: {e}")
             return
-        st.session_state.model = YOLO(MODEL_PATH)
-        st.session_state.label_names = st.session_state.model.names
+
     st.markdown("---")
     st.session_state.detection_method = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi via Webcam"],
         key="detection_method_radio"
@@ -210,7 +202,7 @@ def detect_page():
         buf = io.BytesIO()
         annotated.save(buf, format="JPEG")
         st.download_button(f"Download Hasil – {uploaded.name}",
-                           buf.getvalue(), f"hasil_{uploaded.name}", "image/jpeg")
+                           buf.getvalue(), f"hasil_{uploaded.name}", "image/jpeg", key=f"dl_{idx}")
 
         pdf.add_page()
         pdf.set_font("Times", size=10)
@@ -232,30 +224,37 @@ def detect_page():
         st.download_button("Download Semua Laporan (PDF)",
                            pdf_bytes, "laporan_covision.pdf", "application/pdf")
 
-# ================= WEBCAM (OPTIMIZED) =================
+# ================= WEBCAM (FIXED & OPTIMIZED) =================
+class VideoProcessor(VideoProcessorBase):
+    def __init__(self, model):
+        self.model = model
+
+    def recv(self, frame):
+        # Konversi frame langsung dari memori array (Menghindari proses simpan I/O file sementara yang berat)
+        img = frame.to_ndarray(format="bgr24")
+        
+        # Prediksi langsung dari numpy array (jauh lebih cepat dan stabil dibanding menulis file temp ke disk)
+        results = self.model(img, verbose=False)[0]
+        
+        annotated = results.plot()
+        annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+        return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
+
 def webcam_detect_page():
     st.header("Webcam Real-Time Detection")
     st.write("Aktifkan webcam untuk mendeteksi kopi secara langsung melalui browser.")
-    model = st.session_state.model
+    
+    if st.session_state.model is None:
+        st.warning("Model belum dimuat. Silakan tunggu atau muat ulang halaman.")
+        return
 
-    class VideoProcessor(VideoProcessorBase):
-        def recv(self, frame):
-            img = frame.to_ndarray(format="bgr24")
-            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-                cv2.imwrite(tmp.name, img)
-                try:
-                    results = model(tmp.name)[0]
-                finally:
-                    os.remove(tmp.name)
-            annotated = results.plot()
-            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-            return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
-
+    # Inisialisasi komponen webrtc dengan meneruskan model secara aman ke kelas VideoProcessor
     webrtc_streamer(
         key="yolo-stream",
-        video_processor_factory=VideoProcessor,
+        video_processor_factory=lambda: VideoProcessor(st.session_state.model),
         rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
-        media_stream_constraints={"video": True, "audio": False}
+        media_stream_constraints={"video": True, "audio": False},
+        async_processing=True 
     )
     
 def main_app():
