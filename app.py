@@ -229,11 +229,14 @@ def webcam_detect_page():
             return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
 
     webrtc_streamer(
-        key="yolo-stream",
-        video_processor_factory=VideoProcessor,
-        rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
-        media_stream_constraints={"video": True, "audio": False}
-    )
+    key="webcam",
+    rtc_configuration={
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},
+            {"urls": ["stun:global.stun.twilio.com:3478"]}
+        ]
+    }
+)
 
 
 def main_app():
