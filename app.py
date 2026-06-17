@@ -1,13 +1,11 @@
-import cv2
 import streamlit as st
-from PIL import Image, UnidentifiedImageError, ImageOps
+from PIL import Image, UnidentifiedImageError, ExifTags, ImageOps
 from ultralytics import YOLO
 from fpdf import FPDF
-import tempfile, gdown, os, json, io, datetime
-from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
+import tempfile, gdown, os, json, io, datetime, cv2
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 import av
 
-st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
 st.markdown(
     """
     <style id="auto-theme">
@@ -47,11 +45,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 def force_rerun():
     if hasattr(st, "rerun"):
         st.rerun()
     else:
         st.experimental_rerun()
+
+st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
+
 
 USER_FILE = "users.json"
 def load_users():
@@ -60,9 +62,7 @@ def save_users(u): json.dump(u, open(USER_FILE, "w"))
 
 users = load_users()
 defaults = { "logged_in": False, "page": "login", "username": "",
-             "model": None, "label_names": {}, "sub_page": "Deteksi",
-           "detection_method": "Upload Gambar"
-}
+             "model": None, "label_names": {}, "sub_page": "Deteksi" }
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
 
@@ -107,14 +107,16 @@ def about_page():
     with col1:
         st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/matang.jpg", caption="Matang", use_container_width=True)
         st.markdown("""
-        **Matang (Grade A)** - Warna merah merata  
+        **Matang (Grade A)**  
+        - Warna merah merata  
         - Siap untuk didistribusikan
         """)
 
     with col2:
         st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/setengah_matang.jpg", caption="Setengah Matang", use_container_width=True)
         st.markdown("""
-        **Setengah Matang (Grade B)** - Warna kuning  
+        **Setengah Matang (Grade B)**  
+        - Warna kuning  
         - Masih keras sebagian  
         - Belum siap didistribusikan, cocok untuk pematangan lanjutan
         """)
@@ -122,7 +124,8 @@ def about_page():
     with col3:
         st.image("https://github.com/rahmidwintan09/CoVision/blob/212064132008d93a15a9c74e975bbd1e2977903f/images/mentah.jpg", caption="Mentah", use_container_width=True)
         st.markdown("""
-        **Mentah (Grade C)** - Warna hijau 
+        **Mentah (Grade C)**  
+        - Warna hijau 
         - Tekstur keras  
         """)
 
@@ -130,38 +133,22 @@ def about_page():
     st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
 
 def upload_image_detect_page():
-    uploaded_files = st.file_uploader(
-        "Upload gambar kopi",
-        accept_multiple_files=True,
-        type=["jpg", "jpeg", "png"]
-    )
+    uploaded_files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
     st.session_state.uploaded_files = uploaded_files or []
-    
+
 def detect_page():
     st.title("CoVision: Deteksi Tingkat Kematangan Buah Kopi")
+    st.caption("Deteksi Kopi Sekarang!")
 
-    MODEL_URL  = "https://drive.google.com/uc?id=14XeE8fmUgsvJsHisBevysolxwsGdMP2H"
+    MODEL_URL  = "https://drive.google.com/file/d/1LVH621YUKJO5XPT4tXkX0hvNj-HxbQYl/view?usp=sharing"
     MODEL_PATH = "best_kopi.pt"
 
     if st.session_state.model is None:
-        if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 1000000:
-            os.remove(MODEL_PATH)
-
         if not os.path.exists(MODEL_PATH):
             with st.spinner("Mengunduh model…"):
-                gdown.download(MODEL_URL, MODEL_PATH, quiet=True)
-
-        if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
-            st.error("❌ Model corrupt / gagal download")
-            return 
-
-        try:
-            st.session_state.model = YOLO(MODEL_PATH)
-            st.session_state.label_names = st.session_state.model.names
-        except Exception as e:
-            st.error(f"❌ Gagal load model: {e}")
-            return
-
+                gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+        st.session_state.model = YOLO(MODEL_PATH)
+        st.session_state.label_names = st.session_state.model.names
     st.markdown("---")
     st.session_state.detection_method = st.radio("Pilih Metode Deteksi", ["Upload Gambar", "Deteksi via Webcam"],
         key="detection_method_radio"
@@ -202,7 +189,7 @@ def detect_page():
         buf = io.BytesIO()
         annotated.save(buf, format="JPEG")
         st.download_button(f"Download Hasil – {uploaded.name}",
-                           buf.getvalue(), f"hasil_{uploaded.name}", "image/jpeg", key=f"dl_{idx}")
+                           buf.getvalue(), f"hasil_{uploaded.name}", "image/jpeg")
 
         pdf.add_page()
         pdf.set_font("Times", size=10)
@@ -224,42 +211,32 @@ def detect_page():
         st.download_button("Download Semua Laporan (PDF)",
                            pdf_bytes, "laporan_covision.pdf", "application/pdf")
 
-
-# ================= WEBCAM RE-ARCHITECTED (MURNI BEBAS MARSHALL EXCEPTION) =================
 def webcam_detect_page():
-    st.header("Webcam Real-Time Detection")
-    st.write("Aktifkan webcam untuk melihat hasil deteksi langsung.")
+    st.header("Deteksi kopi via Webcam (Real-Time)")
+    st.write("Aktifkan webcam untuk mendeteksi kopi secara langsung melalui browser.")
+    model = st.session_state.model
 
-    # 1. Definisikan pemroses video statis di tingkat lokal fungsi tanpa referensi luar
-    class VideoTransformTrack:
-        def transform(self, frame: av.VideoFrame) -> av.VideoFrame:
+    class VideoProcessor(VideoProcessorBase):
+        def recv(self, frame):
             img = frame.to_ndarray(format="bgr24")
-            # Akses model secara anonim langsung via pemanggilan file pt jika tersedia
-            if os.path.exists("best_kopi.pt"):
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                cv2.imwrite(tmp.name, img)
                 try:
-                    # Supaya ringan, panggil model di thread lokal stream secara independen
-                    net = YOLO("best_kopi.pt")
-                    results = net(img, verbose=False)[0]
-                    img = results.plot()
-                except:
-                    pass
-            return av.VideoFrame.from_ndarray(img, format="bgr24")
+                    results = model(tmp.name)[0]
+                finally:
+                    os.remove(tmp.name)
+            annotated = results.plot()
+            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+            return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
 
-    # 2. Bungkus ke callback objek bersih tanpa memparsing variable eksternal ke streamlit_webrtc
-    def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
-        transformer = VideoTransformTrack()
-        return transformer.transform(frame)
-
-    # 3. Panggil komponen dengan key baru fresh
     webrtc_streamer(
-        key="yolo-stream-final-v4",
-        mode=WebRtcMode.SENDRECV,
+        key="yolo-stream",
+        video_processor_factory=VideoProcessor,
         rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
-        video_frame_callback=video_frame_callback,
-        media_stream_constraints={"video": True, "audio": False},
-        async_processing=True
+        media_stream_constraints={"video": True, "audio": False}
     )
-    
+
+
 def main_app():
     with st.sidebar:
         st.markdown(f"Username")
