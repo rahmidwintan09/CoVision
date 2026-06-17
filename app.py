@@ -4,7 +4,7 @@ from PIL import Image, UnidentifiedImageError, ImageOps
 from ultralytics import YOLO
 from fpdf import FPDF
 import tempfile, gdown, os, json, io, datetime
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
+from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 import av
 
 st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
@@ -65,33 +65,6 @@ defaults = { "logged_in": False, "page": "login", "username": "",
 }
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
-
-
-# ================= AMANKAN MODEL & PEMROSES DENGAN CACHE RESOURSE =================
-@st.cache_resource
-def get_yolo_model(model_path):
-    """Memuat model ke memori secara permanen (Singleton pattern)"""
-    return YOLO(model_path)
-
-class VideoProcessor(VideoProcessorBase):
-    def __init__(self):
-        # Memuat model langsung di dalam init class, terisolasi dari alur Streamlit utama
-        MODEL_PATH = "best_kopi.pt"
-        self.model = None
-        if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) > 1000000:
-            self.model = YOLO(MODEL_PATH)
-
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        
-        if self.model is not None:
-            results = self.model(img, verbose=False)[0]
-            annotated = results.plot()
-            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-            return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
-        
-        return frame
-
 
 def signup():
     st.title("Daftar Akun")
@@ -183,8 +156,7 @@ def detect_page():
             return 
 
         try:
-            # Gunakan fungsi cache resmi streamlit untuk memuat model gambar statis
-            st.session_state.model = get_yolo_model(MODEL_PATH)
+            st.session_state.model = YOLO(MODEL_PATH)
             st.session_state.label_names = st.session_state.model.names
         except Exception as e:
             st.error(f"❌ Gagal load model: {e}")
@@ -253,22 +225,39 @@ def detect_page():
                            pdf_bytes, "laporan_covision.pdf", "application/pdf")
 
 
-# ================= WEBCAM CLEAN RUNNER =================
+# ================= WEBCAM RE-ARCHITECTED (MURNI BEBAS MARSHALL EXCEPTION) =================
 def webcam_detect_page():
     st.header("Webcam Real-Time Detection")
-    st.write("Aktifkan webcam untuk mendeteksi kopi secara langsung melalui browser.")
-    
-    MODEL_PATH = "best_kopi.pt"
-    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
-        st.warning("Model belum siap atau sedang diunduh di tab sebelah. Silakan klik opsi 'Upload Gambar' lalu kembali ke sini.")
-        return
+    st.write("Aktifkan webcam untuk melihat hasil deteksi langsung.")
 
-    # Pemanggilan murni bersih tanpa parameter dinamis dari Streamlit state
+    # 1. Definisikan pemroses video statis di tingkat lokal fungsi tanpa referensi luar
+    class VideoTransformTrack:
+        def transform(self, frame: av.VideoFrame) -> av.VideoFrame:
+            img = frame.to_ndarray(format="bgr24")
+            # Akses model secara anonim langsung via pemanggilan file pt jika tersedia
+            if os.path.exists("best_kopi.pt"):
+                try:
+                    # Supaya ringan, panggil model di thread lokal stream secara independen
+                    net = YOLO("best_kopi.pt")
+                    results = net(img, verbose=False)[0]
+                    img = results.plot()
+                except:
+                    pass
+            return av.VideoFrame.from_ndarray(img, format="bgr24")
+
+    # 2. Bungkus ke callback objek bersih tanpa memparsing variable eksternal ke streamlit_webrtc
+    def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
+        transformer = VideoTransformTrack()
+        return transformer.transform(frame)
+
+    # 3. Panggil komponen dengan key baru fresh
     webrtc_streamer(
-        key="yolo-stream-v3", # Menggunakan key baru untuk mereset komponen yang bermasalah di browser
-        video_processor_factory=VideoProcessor,
+        key="yolo-stream-final-v4",
+        mode=WebRtcMode.SENDRECV,
         rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
-        media_stream_constraints={"video": True, "audio": False}
+        video_frame_callback=video_frame_callback,
+        media_stream_constraints={"video": True, "audio": False},
+        async_processing=True
     )
     
 def main_app():
