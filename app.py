@@ -108,7 +108,7 @@ def about_page():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/main/images/matang.jpg"", caption="Matang", use_container_width=True)
+        st.image("https://raw.githubusercontent.com/rahmidwintan09/CoVision/main/images/matang.jpg", caption="Matang", use_container_width=True)
         st.markdown("""
         **Matang (Grade A)**  
         - Warna merah merata  
