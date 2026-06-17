@@ -224,37 +224,35 @@ def detect_page():
         st.download_button("Download Semua Laporan (PDF)",
                            pdf_bytes, "laporan_covision.pdf", "application/pdf")
 
-# ================= WEBCAM (FIXED & OPTIMIZED) =================
+# ================= WEBCAM (PERBAIKAN MARSHALL EXCEPTION) =================
 class VideoProcessor(VideoProcessorBase):
-    def __init__(self, model):
-        self.model = model
-
     def recv(self, frame):
-        # Konversi frame langsung dari memori array (Menghindari proses simpan I/O file sementara yang berat)
         img = frame.to_ndarray(format="bgr24")
         
-        # Prediksi langsung dari numpy array (jauh lebih cepat dan stabil dibanding menulis file temp ke disk)
-        results = self.model(img, verbose=False)[0]
+        # Mengakses model langsung dari global state aplikasi tanpa memparsing objek lewat streamlit component parameter
+        if "model" in st.session_state and st.session_state.model is not None:
+            results = st.session_state.model(img, verbose=False)[0]
+            annotated = results.plot()
+            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+            return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
         
-        annotated = results.plot()
-        annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-        return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
+        # Kembalikan frame asli jika model belum siap
+        return frame
 
 def webcam_detect_page():
     st.header("Webcam Real-Time Detection")
     st.write("Aktifkan webcam untuk mendeteksi kopi secara langsung melalui browser.")
     
     if st.session_state.model is None:
-        st.warning("Model belum dimuat. Silakan tunggu atau muat ulang halaman.")
+        st.warning("Model belum dimuat. Silakan tunggu beberapa saat.")
         return
 
-    # Inisialisasi komponen webrtc dengan meneruskan model secara aman ke kelas VideoProcessor
+    # SANGAT PENTING: Jangan masukkan argumen/variabel model ke dalam pemanggilan fungsi webrtc_streamer ini
     webrtc_streamer(
         key="yolo-stream",
-        video_processor_factory=lambda: VideoProcessor(st.session_state.model),
+        video_processor_factory=VideoProcessor,
         rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
-        media_stream_constraints={"video": True, "audio": False},
-        async_processing=True 
+        media_stream_constraints={"video": True, "audio": False}
     )
     
 def main_app():
