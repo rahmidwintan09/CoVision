@@ -104,7 +104,6 @@ def about_page():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     col1, col2, col3 = st.columns(3)
 
-    # Pemetaan data gambar
     gambar_data = [
         {"col": col1, "name": "matang.jpg", "label": "Matang (Grade A)", "desc": "- Warna merah merata\n- Siap didistribusikan"},
         {"col": col2, "name": "setengah_matang.jpg", "label": "Setengah Matang (Grade B)", "desc": "- Warna kuning\n- Masih keras sebagian\n- Cocok untuk pematangan lanjutan"},
@@ -115,25 +114,22 @@ def about_page():
         with item["col"]:
             img_path = os.path.join(BASE_DIR, "images", item["name"])
             
-            # 1. Cek apakah file ada secara fisik
+            # Cek apakah file ada secara fisik
             if os.path.exists(img_path):
                 try:
-                    # 2. Cek apakah file valid dan bisa dibuka sebagai gambar
-                    img = Image.open(img_path)
-                    img.verify() # Melakukan verifikasi struktur internal file gambar
+                    # Buka gambar dan PAKSA load pikselnya ke memori + konversi ke RGB
+                    with Image.open(img_path) as loaded_img:
+                        img_rgb = loaded_img.convert("RGB")
+                        img_rgb.load()  # Memaksa pembacaan seluruh data piksel gambar
                     
-                    # Karena img.verify() menutup file, kita open kembali untuk ditampilkan
-                    img = Image.open(img_path) 
+                    # Tampilkan gambar yang sudah dijamin bertipe RGB murni ke Streamlit
+                    st.image(img_rgb, caption=item["label"], use_container_width=True)
                     
-                    # 3. Tampilkan ke Streamlit jika benar-benar valid
-                    st.image(img, caption=item["label"], use_container_width=True)
-                    
-                except (UnidentifiedImageError, IOError, SyntaxError) as e:
-                    # Menangani jika file corrupt, rusak, atau 0 KB
-                    st.error(f"⚠️ Gambar `{item['name']}` rusak atau corrupt di server.")
-                    st.caption("Solusi: Silakan re-upload/replace gambar ini ke GitHub Anda.")
+                except Exception as e:
+                    # Menangkap segala jenis error pembacaan data piksel / tipe data rusak
+                    st.error(f"⚠️ Gambar `{item['name']}` tidak dapat diproses.")
+                    st.caption(f"Detail error internal: {str(e)}")
             else:
-                # Menangani jika file benar-benar tidak ada di folder
                 st.warning(f"❌ File `{item['name']}` tidak ditemukan di folder `images/`.")
                 
             st.markdown(f"**{item['label']}**\n{item['desc']}")
