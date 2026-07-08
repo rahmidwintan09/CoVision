@@ -104,21 +104,39 @@ def about_page():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     col1, col2, col3 = st.columns(3)
 
-    # Validasi path gambar lokal agar tidak TypeError jika file hilang
-    for col, img_name, label, desc in zip(
-        [col1, col2, col3], 
-        ["matang.jpg", "setengah_matang.jpg", "mentah.jpg"],
-        ["Matang (Grade A)", "Setengah Matang (Grade B)", "Mentah (Grade C)"],
-        ["- Warna merah merata\n- Siap didistribusikan", "- Warna kuning\n- Masih keras sebagian\n- Cocok untuk pematangan lanjutan", "- Warna hijau\n- Tekstur keras"]
-    ):
-        with col:
-            img_path = os.path.join(BASE_DIR, "images", img_name)
+    # Pemetaan data gambar
+    gambar_data = [
+        {"col": col1, "name": "matang.jpg", "label": "Matang (Grade A)", "desc": "- Warna merah merata\n- Siap didistribusikan"},
+        {"col": col2, "name": "setengah_matang.jpg", "label": "Setengah Matang (Grade B)", "desc": "- Warna kuning\n- Masih keras sebagian\n- Cocok untuk pematangan lanjutan"},
+        {"col": col3, "name": "mentah.jpg", "label": "Mentah (Grade C)", "desc": "- Warna hijau\n- Tekstur keras"}
+    ]
+
+    for item in gambar_data:
+        with item["col"]:
+            img_path = os.path.join(BASE_DIR, "images", item["name"])
+            
+            # 1. Cek apakah file ada secara fisik
             if os.path.exists(img_path):
-                img = Image.open(img_path)
-                st.image(img, caption=label, use_container_width=True)
+                try:
+                    # 2. Cek apakah file valid dan bisa dibuka sebagai gambar
+                    img = Image.open(img_path)
+                    img.verify() # Melakukan verifikasi struktur internal file gambar
+                    
+                    # Karena img.verify() menutup file, kita open kembali untuk ditampilkan
+                    img = Image.open(img_path) 
+                    
+                    # 3. Tampilkan ke Streamlit jika benar-benar valid
+                    st.image(img, caption=item["label"], use_container_width=True)
+                    
+                except (UnidentifiedImageError, IOError, SyntaxError) as e:
+                    # Menangani jika file corrupt, rusak, atau 0 KB
+                    st.error(f"⚠️ Gambar `{item['name']}` rusak atau corrupt di server.")
+                    st.caption("Solusi: Silakan re-upload/replace gambar ini ke GitHub Anda.")
             else:
-                st.warning(f"Gambar {img_name} tidak ditemukan.")
-            st.markdown(f"**{label}**\n{desc}")
+                # Menangani jika file benar-benar tidak ada di folder
+                st.warning(f"❌ File `{item['name']}` tidak ditemukan di folder `images/`.")
+                
+            st.markdown(f"**{item['label']}**\n{item['desc']}")
 
     st.write("---")
     st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
