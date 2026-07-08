@@ -102,40 +102,27 @@ def about_page():
     """)
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
     col1, col2, col3 = st.columns(3)
 
-    with col1:
-        img1 = Image.open(os.path.join(BASE_DIR, "images", "matang.jpg"))
-        st.image(img1, caption="Matang", use_container_width=True)
-        st.markdown("""
-        **Matang (Grade A)**  
-        - Warna merah merata  
-        - Siap untuk didistribusikan
-        """)
-
-    with col2:
-        img2 = Image.open(os.path.join(BASE_DIR, "images", "setengah_matang.jpg"))
-        st.image(img2, caption="Setengah Matang", use_container_width=True)
-        st.markdown("""
-        **Setengah Matang (Grade B)**  
-        - Warna kuning  
-        - Masih keras sebagian  
-        - Belum siap didistribusikan, cocok untuk pematangan lanjutan
-        """)
-
-    with col3:
-        img3 = Image.open(os.path.join(BASE_DIR, "images", "mentah.jpg"))
-        st.image(img3, caption="Mentah", use_container_width=True)
-        st.markdown("""
-        **Mentah (Grade C)**  
-        - Warna hijau 
-        - Tekstur keras  
-        """)
+    # Validasi path gambar lokal agar tidak TypeError jika file hilang
+    for col, img_name, label, desc in zip(
+        [col1, col2, col3], 
+        ["matang.jpg", "setengah_matang.jpg", "mentah.jpg"],
+        ["Matang (Grade A)", "Setengah Matang (Grade B)", "Mentah (Grade C)"],
+        ["- Warna merah merata\n- Siap didistribusikan", "- Warna kuning\n- Masih keras sebagian\n- Cocok untuk pematangan lanjutan", "- Warna hijau\n- Tekstur keras"]
+    ):
+        with col:
+            img_path = os.path.join(BASE_DIR, "images", img_name)
+            if os.path.exists(img_path):
+                img = Image.open(img_path)
+                st.image(img, caption=label, use_container_width=True)
+            else:
+                st.warning(f"Gambar {img_name} tidak ditemukan.")
+            st.markdown(f"**{label}**\n{desc}")
 
     st.write("---")
     st.info("Klasifikasi ini digunakan sebagai dasar untuk deteksi otomatis tingkat kematangan buah kopi dalam aplikasi CoVision.")
-
+    
 def upload_image_detect_page():
     uploaded_files = st.file_uploader("Upload Gambar Kopi", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
     st.session_state.uploaded_files = uploaded_files or []
