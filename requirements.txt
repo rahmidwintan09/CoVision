@@ -1,13 +1,17 @@
+-c constraints.txt
+
 streamlit>=1.35.0
-opencv-python-headless
-numpy
+ultralytics==8.4.91
+
+numpy==1.26.4
+opencv-python-headless==4.9.0.80
+
 Pillow
-fpdf
 gdown
+fpdf
 psycopg2-binary
 bcrypt
 streamlit-webrtc>=0.47.0
+
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
-torchvision
-onnxruntime
-ultralytics==8.4.91
