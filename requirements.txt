@@ -1,6 +1,5 @@
--c constraints.txt
-
 streamlit>=1.35.0
+
 ultralytics==8.4.91
 
 numpy==1.26.4
