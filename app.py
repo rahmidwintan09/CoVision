@@ -226,6 +226,15 @@ def webcam_detect_page():
 
     model = st.session_state.model
     
+    camera_mode = st.radio(
+        "Pilih Kamera",
+        ["Depan", "Belakang"],
+        horizontal=True
+    )
+    if camera_mode == "Belakang":
+        video_constraints = {"facingMode": {"exact": "environment"}}
+    else:
+        video_constraints = {"facingMode": {"exact": "user"}}
 
     
     class VideoProcessor(VideoProcessorBase):
@@ -239,7 +248,7 @@ def webcam_detect_page():
             return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
 
     webrtc_streamer(
-        key=f"webcam_{camera_mode}",  # 🔥 penting
+        key=f"webcam_{camera_mode}", 
         video_processor_factory=VideoProcessor,
         rtc_configuration={
             "iceServers": [
