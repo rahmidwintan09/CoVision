@@ -6,11 +6,10 @@ psycopg2-binary
 bcrypt
 streamlit-webrtc>=0.47.0
 
+
 numpy==1.26.4
-
 opencv-python-headless==4.9.0.80
-
+torch==2.1.2
+torchvision==0.16.2
 ultralytics==8.4.91
-
---extra-index-url https://download.pytorch.org/whl/cpu
-torch
+onnxruntime
