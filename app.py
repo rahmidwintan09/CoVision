@@ -225,7 +225,18 @@ def webcam_detect_page():
     st.write("Aktifkan webcam untuk mendeteksi kopi secara langsung melalui browser.")
 
     model = st.session_state.model
+    
+    camera_mode = st.radio(
+        "Pilih Kamera",
+        ["Depan", "Belakang"],
+        horizontal=True
+    )
+    if camera_mode == "Belakang":
+        video_constraints = {"facingMode": {"ideal": "environment"}}
+    else:
+        video_constraints = {"facingMode": "user"}
 
+    
     class VideoProcessor(VideoProcessorBase):
         def recv(self, frame):
             img = frame.to_ndarray(format="bgr24")
@@ -246,7 +257,7 @@ def webcam_detect_page():
             ]
         },
         media_stream_constraints={
-            "video": True,
+            "video": video_constraints,
             "audio": False
         },
         async_processing=True
