@@ -226,15 +226,6 @@ def webcam_detect_page():
 
     model = st.session_state.model
     
-    camera_mode = st.radio(
-        "Pilih Kamera",
-        ["Depan", "Belakang"],
-        horizontal=True
-    )
-    if camera_mode == "Belakang":
-        video_constraints = {"facingMode": {"ideal": "environment"}}
-    else:
-        video_constraints = {"facingMode": "user"}
 
     
     class VideoProcessor(VideoProcessorBase):
