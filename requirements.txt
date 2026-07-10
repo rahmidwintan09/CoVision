@@ -11,6 +11,6 @@ opencv-python-headless==4.9.0.80
 torch==2.1.2
 torchvision==0.16.2
 
-ultralytics>=8.3.50
+ultralytics-opencv-headless
 onnxruntime
 streamlit-webrtc>=0.47.0
