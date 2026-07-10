@@ -248,12 +248,16 @@ def webcam_detect_page():
             return av.VideoFrame.from_ndarray(annotated_rgb, format="rgb24")
 
     webrtc_streamer(
-        key="webcam",  
-        video_processor_factory=VideoProcessor,  
+        key=f"webcam_{camera_mode}",  # 🔥 penting
+        video_processor_factory=VideoProcessor,
         rtc_configuration={
             "iceServers": [
                 {"urls": ["stun:stun.l.google.com:19302"]},
-                {"urls": ["stun:global.stun.twilio.com:3478"]}
+                {
+                    "urls": ["turn:openrelay.metered.ca:80"],
+                    "username": "openrelayproject",
+                    "credential": "openrelayproject"
+                }
             ]
         },
         media_stream_constraints={
@@ -262,7 +266,6 @@ def webcam_detect_page():
         },
         async_processing=True
     )
-
 
 def main_app():
     with st.sidebar:
