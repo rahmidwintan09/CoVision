@@ -7,5 +7,10 @@ bcrypt
 streamlit-webrtc>=0.47.0
 
 numpy==1.26.4
+
 opencv-python-headless==4.9.0.80
+
 ultralytics==8.4.91
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
