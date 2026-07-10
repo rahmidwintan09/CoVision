@@ -1,4 +1,11 @@
 import streamlit as st
+
+try:
+    import cv2
+    st.write("CV2 OK:", cv2.__version__)
+except Exception as e:
+    st.error(f"CV2 ERROR: {e}")
+    
 st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
 
 from PIL import Image, UnidentifiedImageError, ExifTags, ImageOps
