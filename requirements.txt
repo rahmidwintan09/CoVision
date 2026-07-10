@@ -14,3 +14,4 @@ torchvision==0.16.2
 ultralytics
 onnxruntime
 streamlit-webrtc>=0.47.0
+
