@@ -1,3 +1,7 @@
+import sys
+import os
+os.environ["OPENCV_VIDEOIO_PRIORITY_BACKEND"] = "0"
+
 import streamlit as st    
 st.set_page_config(page_title="CoVision: Deteksi Tingkat Kematangan Buah Kopi", layout="centered")
 
