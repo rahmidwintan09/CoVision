@@ -1,5 +1,6 @@
 import sys
 import os
+os.environ["OPENCV_HEADLESS"] = "1"
 os.environ["OPENCV_VIDEOIO_PRIORITY_BACKEND"] = "0"
 
 import streamlit as st    
