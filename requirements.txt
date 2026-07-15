@@ -11,4 +11,4 @@ streamlit-webrtc>=0.47.7
 torch==2.1.2
 torchvision==0.16.2
 onnxruntime==1.17.3
-ultralytics==8.2.0
+ultralytics==8.4.0
