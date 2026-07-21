@@ -2,9 +2,9 @@ streamlit>=1.35.0
 numpy==1.26.4
 opencv-python-headless==4.5.5.64
 Pillow==10.3.0
-torch==2.0.1
+ultralytics==8.4.91
+torch==2.1.2
 torchvision==0.15.2
-ultralytics==8.0.196
 streamlit-webrtc==0.47.7
 fpdf==1.7.2
 gdown==5.2.0
