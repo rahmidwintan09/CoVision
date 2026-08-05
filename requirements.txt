@@ -1,6 +1,6 @@
 streamlit>=1.35.0
 numpy==1.26.4
-opencv-python-headless==4.8.1.78
+opencv-python-headless==4.9.0.80
 tornado==6.3.3
 Pillow==10.3.0
 fpdf==1.7.2
