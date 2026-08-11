@@ -193,7 +193,7 @@ def detect_page():
         st.image(annotated, caption="Hasil Deteksi", width=600)
 
         cls = [st.session_state.label_names[int(i)] for i in (r.boxes.cls.tolist() if r.boxes else [])]
-        a, b, c = cls.count("A"), cls.count("B )"), cls.count("C")
+        a, b, c = cls.count("A"), cls.count("B"), cls.count("C")
         col1, col2, col3 = st.columns(3)
         col1.metric("Grade A (Matang)", a); col2.metric("Grade B (Setengah Matang)", b); col3.metric("Grade C (Mentah)", c)
 
